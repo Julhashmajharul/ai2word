@@ -4,6 +4,12 @@ import pypandoc
 import os
 import tempfile
 
+# সার্ভার চালু হওয়ার সময় Pandoc না থাকলে এটি নিজে থেকেই ডাউনলোড করে নেবে (কোনো পারমিশন লাগবে না)
+try:
+    pypandoc.get_pandoc_version()
+except OSError:
+    pypandoc.download_pandoc()
+
 app = Flask(__name__)
 CORS(app)
 
@@ -17,14 +23,16 @@ def convert_to_word():
 
     fd, path = tempfile.mkstemp(suffix='.docx')
     try:
-        # এই লাইনটি আপনার ম্যাথকে আসল Word সমীকরণে রূপান্তর করবে
         pypandoc.convert_text(markdown_text, 'docx', format='markdown', outputfile=path)
         return send_file(path, as_attachment=True, download_name='Smart_Notes.docx')
     except Exception as e:
         return {"error": str(e)}, 500
     finally:
         os.close(fd)
-        os.remove(path)
+        try:
+            os.remove(path)
+        except:
+            pass
 
 if __name__ == '__main__':
     app.run()
